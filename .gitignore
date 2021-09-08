@@ -1,6 +1,6 @@
 *.hex
 *.elf
-*.symm
+*.sym
 *.eep
 *.lss
 *.o
