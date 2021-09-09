@@ -10,12 +10,20 @@
 
 #include <avr/io.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <avr/interrupt.h>
 #include "uart2/uart.h"
 
 extern void output_grb(uint8_t * ptr, uint16_t count);
-
+uint8_t curr_r = 0;
+uint8_t curr_g = 0;
+uint8_t curr_b = 0;
+uint8_t orig_r = 0;
+uint8_t orig_g = 0;
+uint8_t orig_b = 0;
+bool pulse_dir = 0;
+bool cancel = false;
 
 void setColour(uint8_t r, uint8_t g, uint8_t b) {
 	uint8_t * buf = malloc(NUM_LEDS*3);
@@ -25,6 +33,43 @@ void setColour(uint8_t r, uint8_t g, uint8_t b) {
 		buf[i*3+2] = b;
 	}
 	output_grb(buf, (uint16_t)NUM_LEDS*3);
+	free(buf);
+}
+
+void setColourPulse(uint8_t r, uint8_t g, uint8_t b) {
+	curr_r = r;
+	curr_g = g;
+	curr_b = b;
+	uint8_t * buf = malloc(NUM_LEDS*3);
+	for (int i = 0; i < NUM_LEDS; i++) {
+		buf[i*3] = g;
+		buf[i*3+1] = r;
+		buf[i*3+2] = b;
+	}
+	output_grb(buf, (uint16_t)NUM_LEDS*3);
+	free(buf);
+	TCNT0 += 120;
+	
+}
+
+ISR (TIMER0_OVF_vect) {
+	if (!pulse_dir) {
+		curr_r = (curr_r < 5) ? 0 : curr_r - 5;
+		curr_g = (curr_g < 5) ? 0 : curr_g - 5;
+		curr_b = (curr_b < 5) ? 0 : curr_b - 5;
+		if (!curr_r && !curr_g && !curr_b) pulse_dir = 1;
+	} else {
+		curr_r = (orig_r-curr_r < 5) ? orig_r : curr_r + 5;
+		curr_g = (orig_g-curr_g < 5) ? orig_g : curr_g + 5;
+		curr_b = (orig_b-curr_b < 5) ? orig_b : curr_b + 5;
+		if (curr_r == orig_r && curr_g == orig_g && curr_b == orig_b) pulse_dir = 0;
+	}
+	// setColour(0,0,0);
+	if (!cancel) setColourPulse(curr_r, curr_g, curr_b);
+	else {
+		cancel = false;
+		TCCR0 &= 0xF8;
+	}
 }
 
 int main (void) {
@@ -42,7 +87,13 @@ int main (void) {
 	DDRC = 0x3;
 	PORTC = 0;
 	// uint8_t dir = 0;
-	setColour(0,0,255);
+	TCNT0 = 120;
+	TCCR0 = (TCCR0&0xF8)|0x5;
+	TIMSK |= 1 << TOIE0;
+	orig_r = 0;
+	orig_g = 0;
+	orig_b = 255;
+	setColourPulse(0,0,255);
 	// Toggle LEDs on all PORTS
 	while (1) {
 		data_in = uart_getc();	/* receive data from Bluetooth device*/
@@ -67,8 +118,9 @@ int main (void) {
 			tmp[2] = buf[8];
 			blue = atoi(tmp);
 			PORTC ^= 0x2;
+			cancel = true;
 			setColour(red,green,blue);
-			sei();
+			// sei();
 			buf_end = 0;
 			uart_puts("ACK\n");
 		}
