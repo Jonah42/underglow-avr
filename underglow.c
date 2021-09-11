@@ -24,6 +24,7 @@
 #include "uart2/uart.h"
 
 extern void output_grb(uint8_t * ptr, uint16_t count);
+uint8_t * led_buf;
 uint8_t curr_r = 0;
 uint8_t curr_g = 0;
 uint8_t curr_b = 255;
@@ -33,25 +34,22 @@ uint8_t primary_b = 255;
 uint8_t secondary_r = 0;
 uint8_t secondary_g = 0;
 uint8_t secondary_b = 0;
-uint16_t pulse_period = 120;
+uint16_t period = 120;
+uint16_t rotate_width = 1;
 bool pulse_dir = 0; //True towards primary, false towards secondary
 bool cancel = false;
 uint8_t mode = 0;
-const uint16_t paste_map[256] PROGMEM = {20,20,20,21,21,21,22,22,23,23,23,24,24,25,25,26,26,27,27,28,28,29,29,30,30,31,31,32,33,33,34,34,35,36,36,37,38,38,39,40,41,41,42,43,44,44,45,46,47,48,49,50,50,51,52,53,54,55,56,57,58,59,61,62,63,64,65,66,67,69,70,71,73,74,75,77,78,79,81,82,84,85,87,89,90,92,93,95,97,99,100,102,104,106,108,110,112,114,116,118,120,123,125,127,129,132,134,137,139,142,144,147,149,152,155,158,161,164,167,170,173,176,179,182,186,189,192,196,199,203,207,211,214,218,222,226,230,235,239,243,248,252,257,261,266,271,276,281,286,291,297,302,307,313,319,325,330,336,343,349,355,362,368,375,382,389,396,403,410,418,425,433,441,449,457,465,474,482,491,500,509,518,528,537,547,557,567,578,588,599,610,621,632,643,655,667,679,691,704,717,730,743,757,770,784,799,813,828,843,858,874,890,906,922,939,956,973,991,1009,1027,1046,1065,1084,1104,1124,1145,1165,1187,1208,1230,1252,1275,1298,1322,1346,1370,1395,1420,1446,1473,1499,1527,1554,1582,1611,1640,1670,1701,1731,1763,1795,1827,1861,1894,1929,1964};
+const uint16_t paste_map[] PROGMEM = {20,20,20,21,21,21,22,22,23,23,23,24,24,25,25,26,26,27,27,28,28,29,29,30,30,31,31,32,33,33,34,34,35,36,36,37,38,38,39,40,41,41,42,43,44,44,45,46,47,48,49,50,50,51,52,53,54,55,56,57,58,59,61,62,63,64,65,66,67,69,70,71,73,74,75,77,78,79,81,82,84,85,87,89,90,92,93,95,97,99,100,102,104,106,108,110,112,114,116,118,120,123,125,127,129,132,134,137,139,142,144,147,149,152,155,158,161,164,167,170,173,176,179,182,186,189,192,196,199,203,207,211,214,218,222,226,230,235,239,243,248,252,257,261,266,271,276,281,286,291,297,302,307,313,319,325,330,336,343,349,355,362,368,375,382,389,396,403,410,418,425,433,441,449,457,465,474,482,491,500,509,518,528,537,547,557,567,578,588,599,610,621,632,643,655,667,679,691,704,717,730,743,757,770,784,799,813,828,843,858,874,890,906,922,939,956,973,991,1009,1027,1046,1065,1084,1104,1124,1145,1165,1187,1208,1230,1252,1275,1298,1322,1346,1370,1395,1420,1446,1473,1499,1527,1554,1582,1611,1640,1670,1701,1731,1763,1795,1827,1861,1894,1929,1964};
 // uint16_t hello[200] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,};
 uint16_t clock = 0;
 
 void setSolidColour(void) {
-	uint8_t * buf = malloc(NUM_LEDS*3);
-	// uint8_t buf[12];
-	// PORTC |=0x2;
 	for (int i = 0; i < NUM_LEDS; i++) {
-		buf[i*3] = primary_g;
-		buf[i*3+1] = primary_r;
-		buf[i*3+2] = primary_b;
+		led_buf[i*3] = primary_g;
+		led_buf[i*3+1] = primary_r;
+		led_buf[i*3+2] = primary_b;
 	}
-	output_grb(buf, (uint16_t)NUM_LEDS*3);
-	free(buf);
+	output_grb(led_buf, (uint16_t)NUM_LEDS*3);
 }
 
 void setPrimaryRGB(uint8_t* buf) {
@@ -72,43 +70,133 @@ void setSecondaryRGB(uint8_t* buf) {
 	secondary_r = atoi((char*)buf);
 }
 
-void setPulsePeriod(uint8_t* buf) {
+void setPeriod(uint8_t* buf) {
 	buf[3] = '\0';
 	uint8_t pulse_scale = atoi((char*)buf);
 	// pulse_period = pulse_scale < 128 ? paste_map_1[pulse_scale] : paste_map_2[pulse_scale-128];
-	pulse_period = paste_map[pulse_scale];
+	period = pgm_read_word(&paste_map[pulse_scale]);
 	// pulse_period = 120;
 	// setColourPulse();
-	if (pulse_period > 255) PORTC |= 0x2;
+	// if (pulse_period > 255) PORTC |= 0x2;
 }
 
 void setColourPulse(void) {
-	// PORTC |= 0x2;
-	uint8_t * buf = malloc(NUM_LEDS*3);
 	for (int i = 0; i < NUM_LEDS; i++) {
-		buf[i*3] = curr_g;
-		buf[i*3+1] = curr_r;
-		buf[i*3+2] = curr_b;
+		led_buf[i*3] = curr_g;
+		led_buf[i*3+1] = curr_r;
+		led_buf[i*3+2] = curr_b;
 	}
-	output_grb(buf, (uint16_t)NUM_LEDS*3);
-	free(buf);
-	if (pulse_period > 255) TCNT0 = 255;
-	else TCNT0 = pulse_period;
-	
+	output_grb(led_buf, (uint16_t)NUM_LEDS*3);
+	if (period > 255) TCNT0 = 0;
+	else TCNT0 = 255-period;
+}
+
+void setRotateWidth(uint8_t* buf) {
+	buf[3] = '\0';
+	uint16_t rotate_percent = atoi((char*)buf);
+	rotate_width = NUM_LEDS*rotate_percent/100;
+}
+
+void setColourRotate(void) {
+	static uint16_t rotate_peak = 0;
+	for (int i = 0; i < NUM_LEDS; i++) {
+		if ((i >= rotate_peak && i < rotate_peak+rotate_width) ||
+			(rotate_peak+rotate_width > NUM_LEDS && i < rotate_peak+rotate_width-NUM_LEDS)) {
+			led_buf[i*3] = primary_g;
+			led_buf[i*3+1] = primary_r;
+			led_buf[i*3+2] = primary_b;
+		} else {
+			led_buf[i*3] = secondary_g;
+			led_buf[i*3+1] = secondary_r;
+			led_buf[i*3+2] = secondary_b;
+		}
+	}
+	rotate_peak++;
+	if (rotate_peak == NUM_LEDS) rotate_peak = 0;
+	output_grb(led_buf, (uint16_t)NUM_LEDS*3);
+	if (period > 255) TCNT0 = 0;
+	else TCNT0 = 255-period;
+	// PORTC ^= 2;
+}
+
+uint8_t readADC(void) {
+	// PORTC ^= 0x2;
+	if (PINA > 0) PORTC |= 0x2;
+	// if (PINA < 128) return 0;
+	// return (PINA-128)<1;
+	return PINA;
+}
+
+void setColourVolume(void) {
+	static uint16_t prev = 0;
+	// static uint16_t prev2 = 0;
+	uint16_t volume = readADC();
+	// // if (volume < 70) volume = 70;
+	uint8_t t = 10;
+	if (volume>prev && volume-prev > t) {
+		volume = prev+t;
+	} else if (volume<prev && prev-volume > t) {
+		volume = prev-t;
+	}
+	PORTD &= ~0x4;
+	curr_r = (primary_r*volume) >> 8;
+	curr_g = (primary_g*volume) >> 8;
+	curr_b = (primary_b*volume) >> 8;
+	for (int i = 0; i < NUM_LEDS; i++) {
+		led_buf[i*3] = curr_g;
+		led_buf[i*3+1] = curr_r;
+		led_buf[i*3+2] = curr_b;
+	}
+	output_grb(led_buf, (uint16_t)NUM_LEDS*3);
+	PORTD ^= 0x4;
+	// Refresh rate about 60Hz (probs calculated this wrong eek)
+	TCNT0 = 120;
+	// prev2 = prev;
+	prev = volume;
+}
+
+void setColourFrequency(void) {
+	uint8_t increment = 10;
+	if (PIND&0x8) {
+		if (curr_r < primary_r) curr_r = (primary_r-curr_r < increment) ? primary_r : curr_r + increment;
+		else curr_r = (curr_r-primary_r < increment) ? primary_r : curr_r - increment;
+		if (curr_g < primary_g) curr_g = (primary_g-curr_g < increment) ? primary_g : curr_g + increment;
+		else curr_g = (curr_g-primary_g < increment) ? primary_g : curr_g - increment;
+		if (curr_b < primary_b) curr_b = (primary_b-curr_b < increment) ? primary_b : curr_b + increment;
+		else curr_b = (curr_b-primary_b < increment) ? primary_b : curr_b - increment;
+	} else {
+		if (curr_r < secondary_r) curr_r = (secondary_r-curr_r < increment) ? secondary_r : curr_r + increment;
+		else curr_r = (curr_r-secondary_r < increment) ? secondary_r : curr_r - increment;
+		if (curr_g < secondary_g) curr_g = (secondary_g-curr_g < increment) ? secondary_g : curr_g + increment;
+		else curr_g = (curr_g-secondary_g < increment) ? secondary_g : curr_g - increment;
+		if (curr_b < secondary_b) curr_b = (secondary_b-curr_b < increment) ? secondary_b : curr_b + increment;
+		else curr_b = (curr_b-secondary_b < increment) ? secondary_b : curr_b - increment;
+	}
+	for (int i = 0; i < NUM_LEDS; i++) {
+		led_buf[i*3] = curr_g;
+		led_buf[i*3+1] = curr_r;
+		led_buf[i*3+2] = curr_b;
+	}
+	output_grb(led_buf, (uint16_t)NUM_LEDS*3);
+	// Refresh rate about 60Hz (probs calculated this wrong eek)
+	TCNT0 = 250;
+	// prev2 = prev;
 }
 
 ISR (TIMER0_OVF_vect) {
-
-	if (mode != PULSE) {
+	if (mode != PULSE && mode != ROTATE && mode != VOLUME && mode != FREQUENCY) {
 		TCCR0 &= 0xF8;
 		return;
 	}
-	if (pulse_period > 255) clock += 255;
-	if (pulse_period > 255 && clock < pulse_period){
-		TCNT0 = pulse_period-clock < 255 ? pulse_period-clock : 255;
+	if (period > 255) clock += 255;
+	if (period > 255 && clock < period) {
+		TCNT0 = 255-(period-clock < 255 ? period-clock : 255);
 		return;
 	}
 	clock = 0;
+	if (mode == ROTATE) setColourRotate();
+	if (mode == VOLUME) setColourVolume();
+	if (mode == FREQUENCY) setColourFrequency();
 	if (!pulse_dir) { // towards secondary
 		if (curr_r < secondary_r) curr_r = (secondary_r-curr_r < 5) ? secondary_r : curr_r + 5;
 		else curr_r = (curr_r-secondary_r < 5) ? secondary_r : curr_r - 5;
@@ -145,9 +233,10 @@ uint8_t determineExpected(uint8_t command) {
 	else if (command < 30) {
 		switch (command) {
 			case 20: expected = 24; break;
-			case 21: expected = 18; break;
-			case 22: expected = 3; break;
+			case 21: expected = 9; break;
+			case 22: expected = 9; break;
 			case 23: expected = 3; break;
+			case 24: expected = 3; break;
 		}
 	}
 	else if (command < 40) expected = 9;
@@ -165,7 +254,7 @@ void performUpdate(uint8_t command, uint8_t expected, uint8_t* buf) {
 			break;
 		case 10:
 			mode = PULSE;
-			setPulsePeriod(buf+18);
+			setPeriod(buf+18);
 			setSecondaryRGB(buf+9);
 			setPrimaryRGB(buf);
 			TCCR0 = (TCCR0&0xF8)|0x5;
@@ -178,15 +267,53 @@ void performUpdate(uint8_t command, uint8_t expected, uint8_t* buf) {
 			setSecondaryRGB(buf);
 			break;
 		case 13:
-			setPulsePeriod(buf);
+			setPeriod(buf);
 			break;
+		case 20:
+			mode = ROTATE;
+			setRotateWidth(buf+21);
+			setPeriod(buf+18);
+			setSecondaryRGB(buf+9);
+			setPrimaryRGB(buf);
+			TCCR0 = (TCCR0&0xF8)|0x5;
+			setColourRotate();
+			break;
+		case 21:
+			setPrimaryRGB(buf);
+			break;
+		case 22:
+			setSecondaryRGB(buf);
+			break;
+		case 23:
+			setPeriod(buf);
+			break;
+		case 24:
+			setRotateWidth(buf);
+			break;
+		case 30:
+			mode = VOLUME;
+			setPrimaryRGB(buf);
+			TCCR0 = (TCCR0&0xF8)|0x5;
+			setColourVolume();
+			break;
+		case 40:
+			mode = FREQUENCY;
+			setPrimaryRGB(buf);
+			secondary_r = primary_r >> 5;
+			secondary_g = primary_g >> 5;
+			secondary_b = primary_b >> 5;
+			TCCR0 = (TCCR0&0xF8)|0x5;
+			setColourFrequency();
 	}
 }
 
 int main (void) {
+	led_buf = malloc(NUM_LEDS*3);
 	unsigned int data_in;
+	DDRA = 0;
 	DDRC = 0xff;		/* make PORTC as output port */
-	DDRD = 0x2;	
+	DDRD = 0x6;
+	PORTD |= 0x4;	
 	uart_init(UART_BAUD_SELECT(9600, F_CPU));	/* initialize USART with 9600 baud rate */
 	uint8_t *buf = malloc(128);
 	uint8_t buf_end = 0;
@@ -198,19 +325,20 @@ int main (void) {
 	// DDRC = 0x3;
 	PORTC = 0;
 	// uint8_t dir = 0;
-	TCNT0 = pulse_period;
+	TCNT0 = period;
 	
 	TIMSK |= 1 << TOIE0;
 	// mode = SOLID;
 	// PORTC |= 0x2;
 	// setSolidColour();
 	// while(1){}
-	mode = PULSE;
+	mode = VOLUME;
 	// setPulsePeriod((uint8_t*)"120");
 	// setSecondaryRGB((uint8_t*)"000000255");
 	// setPrimaryRGB((uint8_t*)"000000000");
 	TCCR0 = (TCCR0&0xF8)|0x5;
-	setColourPulse();
+	period = 500;
+	setColourVolume();
 	uint8_t command = 0;
 	uint8_t expected;
 	// Toggle LEDs on all PORTS
@@ -225,6 +353,7 @@ int main (void) {
 			buf[2] = '\0';
 			command = atoi((char*)buf);
 			expected = determineExpected(command);
+			// if (expected == 24) PORTC |= 2;
 			buf_end = 0;
 			while (buf_end < expected) {
 				data_in = uart_getc();	/* receive data from Bluetooth device*/
@@ -234,9 +363,13 @@ int main (void) {
 				buf[buf_end] = (uint8_t) data_in;
 				buf_end++;
 			}
+			
 			performUpdate(command, expected, buf);
 			buf_end = 0;
-			uart_puts("ACK\n");
+			char str[20];
+			sprintf(str, "ACK%d-%d\n", period, clock);
+			// uart_puts("ACK\n");
+			uart_puts(str);
 		}
 		/*if (buf_end == 9) {
 			char tmp[4];
@@ -279,6 +412,5 @@ int main (void) {
 		// else buf3[0] += 5;
 		
 	}
-	
 	return 0;
 }
