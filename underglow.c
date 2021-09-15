@@ -4,7 +4,7 @@
 // #define p3 (1 << 3)
 // #define DELAY 500
 #define F_CPU 12000000UL
-#define NUM_LEDS 4
+#define NUM_LEDS 470UL
 
 #define SOLID 0
 #define PULSE 1
@@ -24,6 +24,9 @@
 #include "uart2/uart.h"
 
 extern void output_grb(uint8_t * ptr, uint16_t count);
+extern void output_grb_solid(uint8_t * ptr, uint16_t count);
+extern void output_grb2(uint8_t * ptr, uint16_t count);
+uint8_t tmp_buf[] = {0,0,255};
 uint8_t * led_buf;
 uint8_t curr_r = 0;
 uint8_t curr_g = 0;
@@ -44,12 +47,19 @@ const uint16_t paste_map[] PROGMEM = {20,20,20,21,21,21,22,22,23,23,23,24,24,25,
 uint16_t clock = 0;
 
 void setSolidColour(void) {
-	for (int i = 0; i < NUM_LEDS; i++) {
-		led_buf[i*3] = primary_g;
-		led_buf[i*3+1] = primary_r;
-		led_buf[i*3+2] = primary_b;
-	}
-	output_grb(led_buf, (uint16_t)NUM_LEDS*3);
+	// uint8_t * tmp_buf = malloc(3);
+	// for (uint16_t i = 0; i < NUM_LEDS; i++) {
+		tmp_buf[0] = primary_g;
+		tmp_buf[1] = primary_r;
+		tmp_buf[2] = primary_b;
+		// led_buf[0] = primary_g;
+		// led_buf[1] = primary_r;
+		// led_buf[2] = primary_b;
+
+		// if (i == 119) PORTC |= 2;
+	// }
+	PORTC |= 2;
+	output_grb_solid(tmp_buf, ((uint16_t)NUM_LEDS)*3);
 }
 
 void setPrimaryRGB(uint8_t* buf) {
@@ -81,12 +91,12 @@ void setPeriod(uint8_t* buf) {
 }
 
 void setColourPulse(void) {
-	for (int i = 0; i < NUM_LEDS; i++) {
-		led_buf[i*3] = curr_g;
-		led_buf[i*3+1] = curr_r;
-		led_buf[i*3+2] = curr_b;
-	}
-	output_grb(led_buf, (uint16_t)NUM_LEDS*3);
+	// for (int i = 0; i < NUM_LEDS; i++) {
+		tmp_buf[0] = curr_g;
+		tmp_buf[1] = curr_r;
+		tmp_buf[2] = curr_b;
+	// }
+	output_grb_solid(tmp_buf, (uint16_t)NUM_LEDS*3);
 	if (period > 255) TCNT0 = 0;
 	else TCNT0 = 255-period;
 }
@@ -308,12 +318,19 @@ void performUpdate(uint8_t command, uint8_t expected, uint8_t* buf) {
 }
 
 int main (void) {
-	led_buf = malloc(NUM_LEDS*3);
-	unsigned int data_in;
 	DDRA = 0;
 	DDRC = 0xff;		/* make PORTC as output port */
 	DDRD = 0x6;
-	PORTD |= 0x4;	
+	PORTD |= 0x4;
+	uint16_t length = 4;
+	led_buf = malloc(length*3);
+	if (led_buf == NULL) PORTC |= 2;
+	for (uint8_t i = 0; i < 4; i++) {
+		led_buf[i*3] = 255;
+		led_buf[i*3+1] = 0;
+		led_buf[i*3+2] = 0;
+	}
+	unsigned int data_in;
 	uart_init(UART_BAUD_SELECT(9600, F_CPU));	/* initialize USART with 9600 baud rate */
 	uint8_t *buf = malloc(128);
 	uint8_t buf_end = 0;
@@ -328,17 +345,17 @@ int main (void) {
 	TCNT0 = period;
 	
 	TIMSK |= 1 << TOIE0;
-	// mode = SOLID;
+	mode = SOLID;
 	// PORTC |= 0x2;
-	// setSolidColour();
+	setSolidColour();
 	// while(1){}
-	mode = VOLUME;
+	// mode = VOLUME;
 	// setPulsePeriod((uint8_t*)"120");
 	// setSecondaryRGB((uint8_t*)"000000255");
 	// setPrimaryRGB((uint8_t*)"000000000");
-	TCCR0 = (TCCR0&0xF8)|0x5;
-	period = 500;
-	setColourVolume();
+	// TCCR0 = (TCCR0&0xF8)|0x5;
+	// period = 500;
+	// setColourVolume();
 	uint8_t command = 0;
 	uint8_t expected;
 	// Toggle LEDs on all PORTS

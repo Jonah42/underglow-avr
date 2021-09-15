@@ -14,8 +14,8 @@
 .equ      OUTBIT,   0
 
 
-.global output_grb
-output_grb:
+.global output_grb2
+output_grb2:
          mov   r26, r24      ;r26:27 = X = p_buf
          mov   r27, r25
          mov   r24, r22      ;r24:25 = count
@@ -69,13 +69,17 @@ bit8:
          nop                  ; 1   +6
          nop                  ; 1   +7
          nop                  ; 1   +8
-         ld     r18, X+       ; 2   +9 fetch next byte
+         ;ld     r18, X+       ; 2   +9 fetch next byte
+         ldi r18, 255
+         nop
          sbiw   r24, 1        ; 2   +11 dec byte counter
          brne   loop1         ; 2   +13 loop back or return
          out    SREG, r22     ; restore global int flag
          ret
 L2:
-         ld     r18, X+       ; 2   +3 fetch next byte
+         ;ld     r18, X+       ; 2   +3 fetch next byte
+         ldi r18, 255
+         nop
          sbiw   r24, 1        ; 2   +5 dec byte counter
          nop                  ; 1   +7
          nop                  ; 1   +8

@@ -1,25 +1,20 @@
 #define __SFR_OFFSET 0 
 #include <avr/io.h> 
 
-;extern void output_grb(u8 * ptr, u16 count)
-;
-; r18 = data byte
-; r19 = 7-bit count
-; r20 = 1 output
-; r21 = 0 output
-; r22 = SREG save
-; r24:25 = 16-bit count
-; r26:27 (X) = data pointer
-
+; (p_buf, count)
 .equ      OUTBIT,   0
 
 
-.global output_grb
-output_grb:
-         mov   r26, r24      ;r26:27 = X = p_buf
+.global output_grb_solid
+output_grb_solid:
+         mov   r26, r24      ;r26 = r = p_buf
          mov   r27, r25
+         mov   r30, r24      ;copy of X
+         mov   r31, r25
+
          mov   r24, r22      ;r24:25 = count
          mov   r25, r23
+         ldi r23, 3           ;count for bytes
          ;cpi   r24, 3
          ;breq  setled
          ;ldi   r22, 2
@@ -61,10 +56,11 @@ L1:
 bit8:
          ldi    r19, 7        ; 1   +14 bit count for next byte
          out    PORTC, r20    ; 1   +0 start of a bit pulse
-         brts   L2            ; 1/2 +1 branch if last bit is a 1
-         nop                  ; 1   +2
-         nop                  ; 1   +3
-         nop                  ; 1   +4
+         ;brts   L2            ; 1/2 +1 branch if last bit is a 1
+         nop
+         subi   r23, 1                  ; 1   +2
+         breq   bit8_2_reset  ; 1/2 +3 branch if we need to reset
+         nop                  ; 1 +4
          out    PORTC, r21    ; 1   +5 end hi for '0' bit (5 clocks hi)
          nop                  ; 1   +6
          nop                  ; 1   +7
@@ -74,15 +70,34 @@ bit8:
          brne   loop1         ; 2   +13 loop back or return
          out    SREG, r22     ; restore global int flag
          ret
+bit8_2_reset:
+         out    PORTC, r21    ; 1   +5 end hi for '0' bit (5 clocks hi)
+         mov  r26, r30                  ; 1   +6
+         ;mov  r27, r31                  ; 1   +6
+         ldi  r23, 3                  ; 1   +7
+         nop                  ; 1   +8
+         ld     r18, X+       ; 2   +9 fetch next byte
+         sbiw   r24, 1        ; 2   +11 dec byte counter
+         brne   loop1         ; 2   +13 loop back or return
+         out    SREG, r22     ; restore global int flag
+         ret
 L2:
          ld     r18, X+       ; 2   +3 fetch next byte
-         sbiw   r24, 1        ; 2   +5 dec byte counter
+         subi   r23, 1                  ; 1   +5
+         breq L2_2_reset     ; 1/2 +6
+         sbiw   r24, 1        ; 2   +11 dec byte counter
          nop                  ; 1   +7
+         out     PORTC, r21   ; 1   +10 end hi for '1' bit (10 clocks hi)
          nop                  ; 1   +8
          nop                  ; 1   +9
+         brne   loop1         ; 2   +13 loop back or return
+         out    SREG, r22     ; restore global int flag
+         ret
+L2_2_reset:
+         mov  r26, r30                  ; 1   +8
+         ldi  r23, 3                  ; 1   +9
          out     PORTC, r21   ; 1   +10 end hi for '1' bit (10 clocks hi)
-         nop                  ; 1   +11
-         nop                  ; 1   +12
+         sbiw   r24, 1        ; 2   +11 dec byte counter
          brne   loop1         ; 2   +13 loop back or return
          out    SREG, r22     ; restore global int flag
          ret
