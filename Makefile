@@ -94,7 +94,7 @@ CPPSRC =
 #     Even though the DOS/Win* filesystem matches both .s and .S the same,
 #     it will preserve the spelling of the filenames, and gcc itself does
 #     care about how the name is spelled on its command-line.
-ASRC = led.S led2.S led3.S
+ASRC = led2.S led3.S
 
 
 # Optimization level, can be [0, 1, 2, 3, s]. 
@@ -337,7 +337,7 @@ DEBUG_HOST = localhost
 
 # Define programs and commands.
 SHELL = sh
-CC = avr-gcc
+CC = C:\Users\jmegg\Downloads\avr-gcc-11.1.0-x64-windows\avr-gcc-11.1.0-x64-windows\bin\avr-gcc
 OBJCOPY = avr-objcopy
 OBJDUMP = avr-objdump
 SIZE = avr-size
@@ -398,7 +398,8 @@ ALL_ASFLAGS = -mmcu=$(MCU) -I. -x assembler-with-cpp $(ASFLAGS)
 all: begin gccversion sizebefore build sizeafter end
 
 # Change the build target to build a HEX file or a library.
-build: elf hex eep lss sym
+build: hex
+# build: elf hex eep lss sym
 #build: lib
 
 

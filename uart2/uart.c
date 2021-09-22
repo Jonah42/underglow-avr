@@ -423,6 +423,10 @@ Purpose:  called when the UART is ready to transmit the next byte
     }
 }
 
+bool finished_sending(void) {
+    return UART_TxHead == UART_TxTail;
+}
+
 
 /*************************************************************************
 Function: uart_init()
@@ -512,6 +516,13 @@ unsigned int uart_getc(void)
     return (lastRxError << 8) + data;
 
 }/* uart_getc */
+
+bool uart_peekc(void) {
+    if ( UART_RxHead == UART_RxTail ) {
+        return false;   /* no data available */
+    }
+    return true;
+}
 
 
 /*************************************************************************

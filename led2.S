@@ -9,8 +9,8 @@
 output_grb_solid:
          mov   r26, r24      ;r26 = r = p_buf
          mov   r27, r25
-         mov   r30, r24      ;copy of X
-         mov   r31, r25
+         ;mov   r30, r24      ;copy of X
+         ;mov   r31, r25
 
          mov   r24, r22      ;r24:25 = count
          mov   r25, r23
@@ -72,31 +72,12 @@ bit8:
          ret
 bit8_2_reset:
          out    PORTC, r21    ; 1   +5 end hi for '0' bit (5 clocks hi)
-         mov  r26, r30                  ; 1   +6
-         ;mov  r27, r31                  ; 1   +6
-         ldi  r23, 3                  ; 1   +7
-         nop                  ; 1   +8
+         ;mov  r26, r30                  ; 1   +6
+         ;mov  r27, r31                  ; 1   +7
+         sbiw r26, 3          ; 2   +6
+         ldi  r23, 3                  ; 1   +8
+         ;nop                  ; 1   +8
          ld     r18, X+       ; 2   +9 fetch next byte
-         sbiw   r24, 1        ; 2   +11 dec byte counter
-         brne   loop1         ; 2   +13 loop back or return
-         out    SREG, r22     ; restore global int flag
-         ret
-L2:
-         ld     r18, X+       ; 2   +3 fetch next byte
-         subi   r23, 1                  ; 1   +5
-         breq L2_2_reset     ; 1/2 +6
-         sbiw   r24, 1        ; 2   +11 dec byte counter
-         nop                  ; 1   +7
-         out     PORTC, r21   ; 1   +10 end hi for '1' bit (10 clocks hi)
-         nop                  ; 1   +8
-         nop                  ; 1   +9
-         brne   loop1         ; 2   +13 loop back or return
-         out    SREG, r22     ; restore global int flag
-         ret
-L2_2_reset:
-         mov  r26, r30                  ; 1   +8
-         ldi  r23, 3                  ; 1   +9
-         out     PORTC, r21   ; 1   +10 end hi for '1' bit (10 clocks hi)
          sbiw   r24, 1        ; 2   +11 dec byte counter
          brne   loop1         ; 2   +13 loop back or return
          out    SREG, r22     ; restore global int flag
